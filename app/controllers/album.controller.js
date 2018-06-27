@@ -167,9 +167,6 @@ exports.update = (req, res) => {
 
 };
 
-/*
-TODO delete ref user
-*/
 exports.delete = (req, res) => {
 
   Album.findOneAndRemove(
@@ -183,6 +180,28 @@ exports.delete = (req, res) => {
         message: "Album not found"
       });
     }
+
+    return User.find(
+    {
+      albumList: req.params.albumID
+    });
+  })
+  .then(data => {
+
+    var promises = [];
+
+    for(var i in data) {
+
+      promises.push(User.findByIdAndUpdate(data[i]._id,
+      {
+        $pull: {albumList: req.params.albumID}
+      }));
+    }
+
+    return Promise.all(promises);
+  })
+  .then(data => {
+
     var filePath = './albums/' + req.params.albumID;
 
     rimraf(filePath,
@@ -196,5 +215,78 @@ exports.delete = (req, res) => {
       message: err.message || "Some error occurred while updating album name."
     });
   });
+
+};
+
+exports.invite = (req, res) => {
+
+  //Validate request
+    if(!req.body.userID) {
+      return res.status(400).send({
+          message: "Pas tout les champs recu"
+      });
+    }
+
+    Album.findOneAndUpdate(
+    {
+      _id: req.params.albumID,
+      $or:[ {'creator':req.decoded.userID},
+            {'memberList':req.decoded.userID} ]
+    },
+    {
+      $addToSet: {memberList: req.body.userID}
+    }, {new: true})
+    .then(data => {
+
+      return User.findByIdAndUpdate(req.body.userID,
+      {
+        $addToSet:{albumList : req.params.albumID}
+      });
+    })
+    .then(data => {
+
+      res.send(data);
+    })
+    .catch(err => {
+      res.status(500).send({
+        message: err.message || "Some error occurred while updating album name."
+      });
+    });
+
+};
+
+exports.kick = (req, res) => {
+
+  //Validate request
+    if(!req.body.userID) {
+      return res.status(400).send({
+          message: "Pas tout les champs recu"
+      });
+    }
+
+    Album.findOneAndUpdate(
+    {
+      _id: req.params.albumID,
+      creator:req.decoded.userID
+    },
+    {
+      $pull: {memberList: req.body.userID}
+    }, {new: true})
+    .then(data => {
+
+      return User.findByIdAndUpdate(req.body.userID,
+      {
+        $pull:{albumList : req.params.albumID}
+      }, {new: true});
+    })
+    .then(data => {
+
+      res.send(data);
+    })
+    .catch(err => {
+      res.status(500).send({
+        message: err.message || "Some error occurred while updating album name."
+      });
+    });
 
 };

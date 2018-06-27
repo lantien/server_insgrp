@@ -7,4 +7,6 @@ module.exports = (app) => {
 
     app.get('/me/profil', user.getMyProfil);
 
+    /*TODO update and delete user */
+
 }

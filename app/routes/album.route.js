@@ -13,4 +13,8 @@ module.exports = (app) => {
 
     app.delete('/me/album/:albumID', album.delete);
 
+    app.post('/me/album/invite/:albumID', album.invite);
+
+    app.post('/me/album/kick/:albumID', album.kick);
+
 }
